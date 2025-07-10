@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridge Wind Engineering Meeting Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Engineering Calm -->
+    <!-- Application Structure Plan: A two-column SPA with vertical navigation on the left and content on the right. This dashboard-like structure allows users to easily switch between key meeting components (Overview, Agenda, Discussion Points, Actions) without scrolling. This is more usable than a linear document for quickly referencing specific information during a meeting. The main "Discussion Points" section uses an interactive accordion, pre-populated with key questions, to transform the template from a passive document into an active pre-briefing and note-taking tool. -->
+    <!-- Visualization & Content Choices: Report Info: 5 key technical topics. Goal: Inform/Compare. Viz: Chart.js Radar Chart showing the focus areas of the meeting. Interaction: Tooltips on hover. Justification: Provides a high-level visual summary that's more engaging than a simple list. Library: Chart.js. | Report Info: Meeting agenda/topics. Goal: Organize/Inform. Viz: Interactive accordion. Interaction: Click to expand/collapse. Justification: Allows users to focus on one topic at a time, reducing clutter. Method: HTML/CSS/JS. | Report Info: Action items. Goal: Organize. Viz: Dynamic HTML table. Interaction: "Add Item" button. Justification: Provides interactive note-taking functionality. Method: HTML/JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40vh;
+            max-height: 400px;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            background-color: #e2e8f0;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        .content-section {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        [contenteditable="true"] {
+            transition: background-color 0.2s;
+        }
+        .dragging {
+            opacity: 0.4;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="w-full md:w-64 bg-white border-r border-slate-200 p-4 md:p-6 flex flex-col">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">Meeting Hub</h1>
+                <nav class="space-y-2 mt-4">
+                    <a href="#overview" class="nav-link flex items-center space-x-3 px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+                        <span>📋</span>
+                        <span>Overview</span>
+                    </a>
+                    <a href="#agenda" class="nav-link flex items-center space-x-3 px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+                        <span>🎯</span>
+                        <span>Agenda</span>
+                    </a>
+                    <a href="#discussion" class="nav-link flex items-center space-x-3 px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+                        <span>💬</span>
+                        <span>Discussion Points</span>
+                    </a>
+                    <a href="#actions" class="nav-link flex items-center space-x-3 px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100">
+                        <span>✔️</span>
+                        <span>Actions & Next Steps</span>
+                    </a>
+                </nav>
+            </div>
+            <div class="mt-auto pt-4 border-t border-slate-200">
+                <h3 class="font-semibold text-sm text-slate-500 mb-2 uppercase tracking-wider">Report</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label for="logo-upload" class="text-sm font-medium text-slate-700">Company Logo</label>
+                        <input type="file" id="logo-upload" accept="image/*" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                    <button id="generate-report-btn" class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors">
+                        <span>📄</span>
+                        <span>Generate Report</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+            <div id="overview" class="content-section">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-slate-900">Project Overview</h2>
+                    <p class="mt-2 text-slate-600">Consultation for the 600m Marine Channel Cable-Stayed Bridge</p>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-lg mb-4 text-slate-900">Meeting Details</h3>
+                        <div class="space-y-3 text-slate-700">
+                            <div class="flex justify-between items-center"><strong>Date:</strong><span id="details-date" contenteditable="true" class="w-2/3 p-1 rounded-md text-right hover:bg-slate-100 focus:bg-slate-200 outline-none">July 10, 2025</span></div>
+                            <div class="flex justify-between items-center"><strong>Time:</strong><span id="details-time" contenteditable="true" class="w-2/3 p-1 rounded-md text-right hover:bg-slate-100 focus:bg-slate-200 outline-none">[Start Time] - [End Time]</span></div>
+                            <div class="flex justify-between items-center"><strong>Location:</strong><span id="details-location" contenteditable="true" class="w-2/3 p-1 rounded-md text-right hover:bg-slate-100 focus:bg-slate-200 outline-none">[e.g., RWDI Office, Virtual]</span></div>
+                            <div class="flex justify-between items-center"><strong>Facilitator:</strong><span id="details-facilitator" contenteditable="true" class="w-2/3 p-1 rounded-md text-right hover:bg-slate-100 focus:bg-slate-200 outline-none">[Your Name]</span></div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl border border-slate-200">
+                        <h3 class="font-semibold text-lg mb-4 text-slate-900">Attendees</h3>
+                        <ul id="attendees-list" class="space-y-2 text-slate-700 mb-4">
+                            <li class="flex items-center group bg-white p-2 rounded-md border" draggable="true">
+                                <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                                <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">[Your Name], Structural Bridge Engineer</span>
+                                <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                            </li>
+                            <li class="flex items-center group bg-white p-2 rounded-md border" draggable="true">
+                                <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                                <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">[RWDI Contact Name], Principal Wind Engineer</span>
+                                <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                            </li>
+                        </ul>
+                        <div class="flex space-x-2 mt-4">
+                            <input id="new-attendee-input" type="text" placeholder="Add new attendee..." class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                            <button id="add-attendee-btn" class="px-4 bg-blue-600 text-white font-bold text-lg rounded-md hover:bg-blue-700">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="agenda" class="content-section hidden">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-slate-900">Meeting Agenda & Objectives</h2>
+                    <p class="mt-2 text-slate-600">Key goals for a productive discussion.</p>
+                </header>
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <ol class="list-decimal list-inside space-y-4 text-slate-700 text-lg">
+                        <li>Introduce project requirements for the 600m cable-stayed bridge.</li>
+                        <li>Discuss RWDI's proposed scope and methodology for wind engineering analysis.</li>
+                        <li>Clarify technical approach for stability, construction, and serviceability.</li>
+                        <li>Define deliverables and integration with the structural design process.</li>
+                        <li>Establish a timeline and next steps.</li>
+                    </ol>
+                </div>
+                 <div class="mt-8 bg-white p-6 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4 text-slate-900">Technical Focus Areas</h3>
+                    <p class="text-slate-600 mb-4">This radar chart provides a visual summary of the key technical topics for discussion, highlighting their interconnected nature.</p>
+                    <div class="chart-container">
+                        <canvas id="topicsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="discussion" class="content-section hidden">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-slate-900">Technical Discussion Points</h2>
+                    <p class="mt-2 text-slate-600">Expand each section to review key questions and add notes.</p>
+                </header>
+                <div id="accordion-container" class="space-y-4"></div>
+                <div class="mt-6 bg-white p-6 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4 text-slate-900">Add New Discussion Point</h3>
+                    <div class="flex space-x-2">
+                        <input id="new-discussion-title" type="text" placeholder="Enter new topic title..." class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button id="add-discussion-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add Topic</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="actions" class="content-section hidden">
+                 <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-slate-900">Action Items & Next Steps</h2>
+                    <p class="mt-2 text-slate-600">Track tasks and plan for future milestones.</p>
+                </header>
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4 text-slate-900">Add New Action Item</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <input id="action-desc" type="text" placeholder="Action description..." class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input id="action-owner" type="text" placeholder="Assigned to..." class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input id="action-due" type="date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <button id="add-action-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add Action</button>
+                </div>
+
+                <div class="mt-8 bg-white p-6 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4 text-slate-900">Summary of Action Items</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="p-2">#</th>
+                                    <th class="p-2">Action Item Description</th>
+                                    <th class="p-2">Assigned To</th>
+                                    <th class="p-2">Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="action-items-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                 <div class="mt-8 bg-white p-6 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-lg mb-4 text-slate-900">Next Steps</h3>
+                    <ul id="next-steps-list" class="list-disc list-inside space-y-2 text-slate-700">
+                        <li>RWDI to submit a formal proposal by EOD July 17, 2025.</li>
+                        <li>Follow-up meeting scheduled for July 24, 2025, to review the proposal.</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            const initialDiscussionData = [
+                { title: "Wind Climate & Site Characterization", questions: ["How will you establish site-specific wind characteristics for our marine location?", "How will you define the vertical wind speed profile and turbulence intensity over the water?", "Will you assess the likelihood of non-synoptic events (e.g., thunderstorms)?", "What technologies will be used (WRF Models, on-site LiDAR, etc.)?"] },
+                { title: "Aerodynamic Stability & Wind Tunnel Testing", questions: ["What is the proposed wind tunnel testing program (2D section vs. 3D full-bridge)?", "How will flutter derivatives be determined to predict critical flutter speed?", "What is the approach for investigating Vortex-Induced Vibrations (VIV)?", "Will the study cover galloping instability for the pylons during construction?"] },
+                { title: "Construction Stage Analysis", questions: ["What is your procedure for analyzing wind loads during critical construction stages?", "Can the analysis provide operational wind speed limits for key activities (e.g., segment lifts)?", "What are the primary aerodynamic instabilities to consider during temporary conditions?"] },
+                { title: "Cable Aerodynamics & Serviceability", questions: ["What is your approach to assessing rain-wind induced vibrations?", "At what point should we consider including cable dampers in the design?", "Will the study predict bridge accelerations for pedestrian/driver comfort?"] },
+                { title: "Data Integration & Deliverables", questions: ["In what format will final wind loading data be delivered for our FE model?", "What level of structural damping is typically assumed in the analysis?", "How will shielding and interference effects be accounted for?"] }
+            ];
+
+            function navigate(hash) {
+                if (!hash) hash = '#overview';
+                contentSections.forEach(section => section.classList.toggle('hidden', '#' + section.id !== hash));
+                navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === hash));
+            }
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.hash = e.currentTarget.getAttribute('href');
+                });
+            });
+
+            window.addEventListener('hashchange', () => navigate(window.location.hash));
+            
+            const accordionContainer = document.getElementById('accordion-container');
+
+            function createAccordionItem(title, questions = []) {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'bg-white rounded-xl border border-slate-200';
+                
+                const questionsHTML = questions.map(q => `
+                    <li class="flex justify-between items-center group">
+                        <span contenteditable="true" class="p-1 rounded-md w-full hover:bg-slate-100 focus:bg-slate-200 outline-none">${q}</span>
+                        <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                    </li>
+                `).join('');
+
+                accordionItem.innerHTML = `
+                    <button class="accordion-header w-full flex justify-between items-center text-left p-6">
+                        <h3 class="font-semibold text-lg text-slate-900">${title}</h3>
+                        <span class="accordion-icon transform transition-transform text-slate-500">▼</span>
+                    </button>
+                    <div class="accordion-content px-6">
+                        <div class="pb-6">
+                            <h4 class="font-semibold text-slate-800 mb-3">Key Questions:</h4>
+                            <ul class="questions-list list-disc list-inside space-y-2 text-slate-600">${questionsHTML}</ul>
+                            <div class="flex space-x-2 mt-4">
+                                <input type="text" placeholder="Add a new question..." class="new-question-input w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                                <button class="add-question-btn px-4 bg-gray-200 text-gray-700 font-bold text-lg rounded-md hover:bg-gray-300">+</button>
+                            </div>
+                            <h4 class="font-semibold text-slate-800 mt-6 mb-3">Notes:</h4>
+                            <textarea class="w-full p-3 border rounded-md h-24 bg-slate-50" placeholder="Add meeting notes here..."></textarea>
+                        </div>
+                    </div>`;
+                
+                accordionContainer.appendChild(accordionItem);
+
+                const header = accordionItem.querySelector('.accordion-header');
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.accordion-icon');
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                });
+            }
+            
+            initialDiscussionData.forEach(item => createAccordionItem(item.title, item.questions));
+            navigate(window.location.hash);
+
+            document.getElementById('add-discussion-btn').addEventListener('click', () => {
+                const input = document.getElementById('new-discussion-title');
+                if (!input.value.trim()) return;
+                createAccordionItem(input.value.trim());
+                input.value = '';
+            });
+
+            accordionContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-question-btn')) {
+                    const container = e.target.closest('.pb-6');
+                    const input = container.querySelector('.new-question-input');
+                    if (!input.value.trim()) return;
+                    
+                    const questionsList = container.querySelector('.questions-list');
+                    const newQuestion = document.createElement('li');
+                    newQuestion.className = 'flex justify-between items-center group';
+                    newQuestion.innerHTML = `
+                        <span contenteditable="true" class="p-1 rounded-md w-full hover:bg-slate-100 focus:bg-slate-200 outline-none">${input.value.trim()}</span>
+                        <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                    `;
+                    questionsList.appendChild(newQuestion);
+                    input.value = '';
+                }
+
+                if (e.target.classList.contains('delete-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+
+            new Chart(document.getElementById('topicsChart').getContext('2d'), {
+                type: 'radar',
+                data: { labels: ['Wind Climate', 'Aero Stability', 'Construction', 'Cable Aero', 'Data Integration'], datasets: [{ label: 'Technical Focus', data: [5, 5, 4, 4, 3], backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2, pointBackgroundColor: 'rgba(59, 130, 246, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(59, 130, 246, 1)' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: 'rgba(0, 0, 0, 0.1)' }, grid: { color: 'rgba(0, 0, 0, 0.1)' }, pointLabels: { font: { size: 14 } }, ticks: { backdropColor: 'rgba(0,0,0,0)', stepSize: 1 } } }, plugins: { legend: { position: 'top' } } }
+            });
+
+            const addActionBtn = document.getElementById('add-action-btn');
+            const actionItemsBody = document.getElementById('action-items-body');
+            let actionItemCount = 0;
+
+            addActionBtn.addEventListener('click', () => {
+                const descInput = document.getElementById('action-desc');
+                const ownerInput = document.getElementById('action-owner');
+                const dueInput = document.getElementById('action-due');
+                if (!descInput.value || !ownerInput.value || !dueInput.value) return;
+                actionItemCount++;
+                const newRow = document.createElement('tr');
+                newRow.className = 'border-b';
+                newRow.innerHTML = `<td class="p-2">${actionItemCount}</td><td class="p-2">${descInput.value}</td><td class="p-2">${ownerInput.value}</td><td class="p-2">${dueInput.value}</td>`;
+                actionItemsBody.appendChild(newRow);
+                descInput.value = ''; ownerInput.value = ''; dueInput.value = '';
+            });
+
+            const attendeesList = document.getElementById('attendees-list');
+            document.getElementById('add-attendee-btn').addEventListener('click', () => {
+                const input = document.getElementById('new-attendee-input');
+                if (!input.value.trim()) return;
+                const newItem = document.createElement('li');
+                newItem.className = 'flex items-center group bg-white p-2 rounded-md border';
+                newItem.setAttribute('draggable', 'true');
+                newItem.innerHTML = `
+                    <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                    <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">${input.value.trim()}</span>
+                    <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                `;
+                attendeesList.appendChild(newItem);
+                input.value = '';
+            });
+
+            attendeesList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+
+            attendeesList.addEventListener('dragstart', e => {
+                if (e.target.tagName === 'LI') {
+                    e.target.classList.add('dragging');
+                }
+            });
+
+            attendeesList.addEventListener('dragend', e => {
+                if (e.target.tagName === 'LI') {
+                    e.target.classList.remove('dragging');
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            attendeesList.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(attendeesList, e.clientY);
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    if (afterElement == null) {
+                        attendeesList.appendChild(dragging);
+                    } else {
+                        attendeesList.insertBefore(dragging, afterElement);
+                    }
+                }
+            });
+            
+            document.getElementById('generate-report-btn').addEventListener('click', () => {
+                const logoFile = document.getElementById('logo-upload').files[0];
+                const generateAndOpenReport = (logoSrc) => {
+                    const date = document.getElementById('details-date').innerText;
+                    const time = document.getElementById('details-time').innerText;
+                    const location = document.getElementById('details-location').innerText;
+                    const facilitator = document.getElementById('details-facilitator').innerText;
+                    
+                    const attendees = Array.from(document.querySelectorAll('#attendees-list li span[contenteditable="true"]')).map(item => `<li>${item.innerText}</li>`).join('');
+                    
+                    const discussionPoints = Array.from(document.querySelectorAll('#accordion-container > div')).map(item => {
+                        const title = item.querySelector('h3').innerText;
+                        const questions = Array.from(item.querySelectorAll('.questions-list li span')).map(q => `<li>${q.innerText}</li>`).join('');
+                        const notes = item.querySelector('textarea').value;
+                        return `<h3>${title}</h3><h4>Key Questions Discussed:</h4><ul>${questions}</ul><h4>Notes:</h4><p>${notes.replace(/\n/g, '<br>') || 'No notes taken.'}</p>`;
+                    }).join('');
+
+                    const actionItems = Array.from(document.querySelectorAll('#action-items-body tr')).map(row => `<tr>${row.innerHTML}</tr>`).join('');
+                    const nextSteps = document.getElementById('next-steps-list').innerHTML;
+
+                    const reportHtml = `
+                        <html>
+                            <head><title>Meeting Minutes</title>
+                            <style>
+                                body { font-family: sans-serif; margin: 2rem; }
+                                h1, h2, h3 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-top: 2rem; }
+                                h4 { margin-top: 1.5rem; color: #334155; }
+                                .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 4px solid #3b82f6; padding-bottom: 1rem;}
+                                .header-text { }
+                                .logo { max-width: 150px; max-height: 75px; }
+                                .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+                                .details-grid div { background-color: #f8f9fa; padding: 0.5rem; border-radius: 4px; }
+                                table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+                                th, td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: left; }
+                                th { background-color: #f1f5f9; }
+                                ul, ol { padding-left: 1.5rem; }
+                                p { white-space: pre-wrap; }
+                            </style>
+                            </head>
+                            <body>
+                                <div class="header">
+                                    <div class="header-text">
+                                        <h1>Meeting Minutes</h1>
+                                        <h2>600m Marine Channel Cable-Stayed Bridge</h2>
+                                    </div>
+                                    ${logoSrc ? `<img src="${logoSrc}" class="logo">` : ''}
+                                </div>
+                                <h2>Meeting Details</h2>
+                                <div class="details-grid">
+                                    <div><strong>Date:</strong> ${date}</div>
+                                    <div><strong>Time:</strong> ${time}</div>
+                                    <div><strong>Location:</strong> ${location}</div>
+                                    <div><strong>Facilitator:</strong> ${facilitator}</div>
+                                </div>
+                                <h2>Attendees</h2>
+                                <ul>${attendees}</ul>
+                                <h2>Discussion Notes</h2>
+                                ${discussionPoints}
+                                <h2>Action Items</h2>
+                                <table><thead><tr><th>#</th><th>Description</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>${actionItems}</tbody></table>
+                                <h2>Next Steps</h2>
+                                <ul>${nextSteps}</ul>
+                            </body>
+                        </html>`;
+
+                    const reportWindow = window.open('', '_blank');
+                    reportWindow.document.write(reportHtml);
+                    reportWindow.document.close();
+                };
+
+                if (logoFile) {
+                    const reader = new FileReader();
+                    reader.onload = e => generateAndOpenReport(e.target.result);
+                    reader.readAsDataURL(logoFile);
+                } else {
+                    generateAndOpenReport(null);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
