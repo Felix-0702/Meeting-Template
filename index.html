@@ -49,6 +49,9 @@
         [contenteditable="true"] {
             transition: background-color 0.2s;
         }
+        .dragging {
+            opacity: 0.4;
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -110,8 +113,16 @@
                      <div class="bg-white p-6 rounded-xl border border-slate-200">
                         <h3 class="font-semibold text-lg mb-4 text-slate-900">Attendees</h3>
                         <ul id="attendees-list" class="space-y-2 text-slate-700 mb-4">
-                            <li class="flex justify-between items-center group"><span contenteditable="true" class="p-1 rounded-md w-full hover:bg-slate-100 focus:bg-slate-200 outline-none">[Your Name], Structural Bridge Engineer</span><button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button></li>
-                            <li class="flex justify-between items-center group"><span contenteditable="true" class="p-1 rounded-md w-full hover:bg-slate-100 focus:bg-slate-200 outline-none">[RWDI Contact Name], Principal Wind Engineer</span><button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button></li>
+                            <li class="flex items-center group bg-white p-2 rounded-md border" draggable="true">
+                                <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                                <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">[Your Name], Structural Bridge Engineer</span>
+                                <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                            </li>
+                            <li class="flex items-center group bg-white p-2 rounded-md border" draggable="true">
+                                <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                                <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">[RWDI Contact Name], Principal Wind Engineer</span>
+                                <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                            </li>
                         </ul>
                         <div class="flex space-x-2 mt-4">
                             <input id="new-attendee-input" type="text" placeholder="Add new attendee..." class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
@@ -337,8 +348,13 @@
                 const input = document.getElementById('new-attendee-input');
                 if (!input.value.trim()) return;
                 const newItem = document.createElement('li');
-                newItem.className = 'flex justify-between items-center group';
-                newItem.innerHTML = `<span contenteditable="true" class="p-1 rounded-md w-full hover:bg-slate-100 focus:bg-slate-200 outline-none">${input.value.trim()}</span><button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>`;
+                newItem.className = 'flex items-center group bg-white p-2 rounded-md border';
+                newItem.setAttribute('draggable', 'true');
+                newItem.innerHTML = `
+                    <span class="drag-handle cursor-move pr-2 text-slate-400">☰</span>
+                    <span contenteditable="true" class="flex-grow p-1 rounded-md hover:bg-slate-100 focus:bg-slate-200 outline-none">${input.value.trim()}</span>
+                    <button class="delete-btn hidden group-hover:block text-red-500 hover:text-red-700 ml-2 text-xl font-bold">×</button>
+                `;
                 attendeesList.appendChild(newItem);
                 input.value = '';
             });
@@ -346,6 +362,44 @@
             attendeesList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     e.target.parentElement.remove();
+                }
+            });
+
+            attendeesList.addEventListener('dragstart', e => {
+                if (e.target.tagName === 'LI') {
+                    e.target.classList.add('dragging');
+                }
+            });
+
+            attendeesList.addEventListener('dragend', e => {
+                if (e.target.tagName === 'LI') {
+                    e.target.classList.remove('dragging');
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            attendeesList.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(attendeesList, e.clientY);
+                const dragging = document.querySelector('.dragging');
+                if (dragging) {
+                    if (afterElement == null) {
+                        attendeesList.appendChild(dragging);
+                    } else {
+                        attendeesList.insertBefore(dragging, afterElement);
+                    }
                 }
             });
             
@@ -357,7 +411,7 @@
                     const location = document.getElementById('details-location').innerText;
                     const facilitator = document.getElementById('details-facilitator').innerText;
                     
-                    const attendees = Array.from(document.querySelectorAll('#attendees-list li span')).map(item => `<li>${item.innerText}</li>`).join('');
+                    const attendees = Array.from(document.querySelectorAll('#attendees-list li span[contenteditable="true"]')).map(item => `<li>${item.innerText}</li>`).join('');
                     
                     const discussionPoints = Array.from(document.querySelectorAll('#accordion-container > div')).map(item => {
                         const title = item.querySelector('h3').innerText;
